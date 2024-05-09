@@ -1,5 +1,7 @@
 import random
 import numpy as np
+import os
+import pickle
 
 class ReplayMemory:
     def __init__(self, capacity, seed):
@@ -39,3 +41,19 @@ class ReplayMemory:
         with open(save_path, "rb") as f:
             self.buffer = pickle.load(f)
             self.position = len(self.buffer) % self.capacity
+
+class MultipleReplayMemory:
+    def __init__(self, capacity, seed, N):
+        self.replay_memories = [ReplayMemory(capacity, seed) for _ in range(N)]
+
+    def push(self, state, action, reward, next_state, done):
+        for memory in self.replay_memories:
+            if random.random() < 0.5:
+                memory.push(state, action, reward, next_state, done)
+
+    def sample(self, batch_size):
+        samples = [memory.sample(batch_size) for memory in self.replay_memories]
+        return [np.concatenate(samples[i][j]) for j in range(len(samples[0]))]
+
+    def __len__(self):
+        return len(self.replay_memories[0])
